@@ -10,7 +10,18 @@ export interface FormFieldConfig<T extends FieldValues> {
   label: string;
   key: string;
   name: keyof T;
-  type: 'text' | 'password' | 'email' | 'number' | 'tel' | 'checkbox' | 'textarea' | 'select' | 'switch' | 'date';
+  type:
+    | 'text'
+    | 'password'
+    | 'email'
+    | 'number'
+    | 'tel'
+    | 'checkbox'
+    | 'textarea'
+    | 'select'
+    | 'switch'
+    | 'date'
+    | 'file';
   text?: string;
   className?: string;
   placeholder?: string;
