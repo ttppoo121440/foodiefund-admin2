@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { DataTablePagination } from '@/components/Table/DataTablePagination';
-import { getColumns } from './Columns';
 import useTableConfig from '@/hooks/useTableConfig';
 import TableFilters from '@/components/Table/TableFilters';
 import TableContent from '@/components/Table/TableContent';
@@ -21,6 +20,7 @@ import { getUserFormFields } from './UserFormFields';
 import { AccountBlackListResponseType, AccountResponseType } from '@/api/services/userService/types';
 import RadioGroup from '@/components/RadioGroup';
 import { blackListedOptions, isAdminOptions } from './RadioGroupConfig';
+import { useColumns } from './Columns';
 
 const Users = () => {
   const { dialogState, setDialogState, updateIsOpen, openDialogEditData, openDialogDeleteData } = DialogConfig();
@@ -59,9 +59,9 @@ const Users = () => {
 
   const table = useTableConfig<AccountResponseType, AccountBlackListResponseType>(
     tableData,
-    getColumns,
-    openDialogEditData,
+    useColumns,
     openDialogDeleteData,
+    openDialogEditData,
     UpdateSwitch,
     blackListedFilter,
   );

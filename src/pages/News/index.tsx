@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { DataTablePagination } from '@/components/Table/DataTablePagination';
-import { getColumns } from './Columns';
 import useTableConfig from '@/hooks/useTableConfig';
 import TableFilters from '@/components/Table/TableFilters';
 import TableContent from '@/components/Table/TableContent';
@@ -19,6 +18,7 @@ import { FormConfig } from './FormConfig';
 import { DialogConfig } from './DialogConfig';
 import { PaginationConfig } from './PaginationConfig';
 import { NewsFormFields } from './NewsFormFields';
+import { useColumns } from './Columns';
 
 const News = () => {
   const { initialValues, methods } = FormConfig();
@@ -42,9 +42,9 @@ const News = () => {
 
   const table = useTableConfig<NewsResponseType, NewsResponseType>(
     tableData,
-    getColumns,
-    openDialogEditData,
+    useColumns,
     openDialogDeleteData,
+    openDialogEditData,
     UpdateSwitch,
   );
 
