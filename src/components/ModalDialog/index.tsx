@@ -39,7 +39,9 @@ const ModalDialog = <T extends object>({
     async (data: T) => {
       try {
         if (dialogState.isEdit) {
-          await updateData(data);
+          if (updateData) {
+            await updateData(data);
+          }
         } else {
           await createData(data);
         }
