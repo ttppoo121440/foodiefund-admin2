@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Users from './pages/Users/indext';
 import News from './pages/News';
+import FileList from './pages/FileList';
 
 const App = () => {
   return (
@@ -12,7 +13,7 @@ const App = () => {
           <Route path="/" element={<Home />} />
           <Route path="users" element={<Users />} />
           <Route path="news" element={<News />} />
-          {/* <Route path="settings" element={<Settings />} /> */}
+          <Route path="fileList" element={<FileList />} />
           {/* <Route path="*" element={<NotFound />} /> */}
         </Routes>
       </Layout>
