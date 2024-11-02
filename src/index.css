@@ -81,3 +81,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+.custom-zoom [data-rmiz-modal-overlay='visible'] {
+  background-color: #000;
+}
