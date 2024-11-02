@@ -46,6 +46,21 @@ export const navItems = [
     ),
   },
   {
+    href: '/fileList',
+    label: 'fileList',
+    icon: (
+      <svg
+        className="h-5 w-5 flex-shrink-0 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path d="M4 5h16v2H4V5zm0 4h16v2H4V9zm0 4h16v2H4v-2zm0 4h16v2H4v-2zM2 3v18h20V3H2zm18 16H4V5h16v14z" />
+      </svg>
+    ),
+  },
+  {
     href: '#',
     label: 'test',
     icon: (
