@@ -1,73 +1,104 @@
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { UseMutateFunction } from '@tanstack/react-query';
 import { Pencil1Icon, TrashIcon } from '@radix-ui/react-icons';
 import { NewsResponseType } from '@/api/services/newsService/types';
 import { AxiosError, AxiosResponse } from 'axios';
+import debounce from 'lodash/debounce';
+import { useCallback, useRef, useEffect } from 'react';
+import { ColumnDef } from '@tanstack/react-table';
+import { Button } from '@/components/ui/button';
+import { SwitchCell } from './SwitchCellComponent';
 
-type getColumnsProps = {
-  openDialogEditData: (data: NewsResponseType) => void;
+type useColumnsProps = {
   openDialogDeleteData: (id: string, title: string) => void;
-  UpdateSwitch: UseMutateFunction<AxiosResponse<NewsResponseType>, AxiosError, NewsResponseType>;
+  openDialogEditData?: (data: NewsResponseType) => void;
+  UpdateSwitch?: UseMutateFunction<AxiosResponse<NewsResponseType>, AxiosError, NewsResponseType>;
 };
-export const getColumns = ({
-  openDialogEditData,
+
+// 定義防抖函數的類型
+type DebouncedFunction = ReturnType<typeof debounce> & {
+  cancel: () => void;
+};
+
+// 定義更新函數的類型
+type UpdateFunction = (item: NewsResponseType, field: 'isTop' | 'isEnabled', value: boolean) => void;
+
+export const useColumns = ({
   openDialogDeleteData,
+  openDialogEditData,
   UpdateSwitch,
-}: getColumnsProps): ColumnDef<NewsResponseType>[] => {
-  const handleToggle = async (field: 'isTop' | 'isEnabled', checked: boolean, item: NewsResponseType) => {
-    if (!item._id) {
-      console.error('Missing _id in payment object');
-      return;
-    }
-    try {
-      await UpdateSwitch({
-        _id: item._id,
-        [field]: checked,
+}: useColumnsProps): ColumnDef<NewsResponseType>[] => {
+  const itemStates = useRef<Record<string, { isEnabled: boolean; isTop: boolean }>>({});
+
+  // 使用正確的類型定義
+  const debouncedFnsRef = useRef<Record<string, DebouncedFunction>>({});
+
+  // 在組件卸載時清理防抖函數
+  useEffect(() => {
+    // 在 effect 內部創建一個引用的副本
+    const currentDebouncedFns = { ...debouncedFnsRef.current };
+
+    return () => {
+      // 使用副本進行清理
+      Object.values(currentDebouncedFns).forEach((fn) => {
+        fn.cancel();
       });
-    } catch (error) {
-      console.error('Toggle failed:', error);
-    }
-  };
-  const Columns: ColumnDef<NewsResponseType>[] = [
+    };
+  }, []);
+
+  const handleToggle = useCallback(
+    (field: 'isTop' | 'isEnabled', checked: boolean, item: NewsResponseType) => {
+      if (!item._id) {
+        console.error('Missing _id in news object');
+        return;
+      }
+
+      // 更新本地狀態
+      itemStates.current[item._id] = {
+        ...itemStates.current[item._id],
+        [field]: checked,
+      };
+
+      // 為每個項目的每個字段創建唯一的 key
+      const key = `${item._id}-${field}`;
+
+      // 如果這個 key 的防抖函數不存在，就創建一個
+      if (!debouncedFnsRef.current[key]) {
+        const updateFn: UpdateFunction = (itemToUpdate, fieldToUpdate, valueToUpdate) => {
+          if (UpdateSwitch) {
+            UpdateSwitch({
+              _id: itemToUpdate._id,
+              [fieldToUpdate]: valueToUpdate,
+            });
+          }
+        };
+
+        debouncedFnsRef.current[key] = debounce(updateFn, 1000);
+      }
+
+      // 使用存儲的防抖函數
+      debouncedFnsRef.current[key](item, field, checked);
+    },
+    [UpdateSwitch],
+  );
+
+  return [
     {
       accessorKey: 'title',
       header: '標題',
-      cell: ({ row }) => <div className="capitalize">{row.getValue('title')}</div>,
-    },
-    {
-      accessorKey: 'content',
-      header: '內容',
-      cell: ({ row }) => <div className="capitalize">{row.getValue('content')}</div>,
-    },
-    {
-      accessorKey: 'isEnabled',
-      header: '是否開啟',
-      cell: ({ row }) => {
-        const payment = row?.original;
-        return (
-          <Switch
-            id={`switch-enabled-${row.id}`}
-            checked={payment.isEnabled as boolean}
-            onCheckedChange={(checked) => handleToggle('isEnabled', checked, payment)}
-          />
-        );
-      },
     },
     {
       accessorKey: 'isTop',
-      header: '是否置頂',
-      cell: ({ row }) => {
-        const payment = row.original;
-        return (
-          <Switch
-            id={`switch-top-${row.id}`}
-            checked={payment.isTop as boolean}
-            onCheckedChange={(checked) => handleToggle('isTop', checked, payment)}
-          />
-        );
-      },
+      header: '置頂',
+      cell: ({ row }) => (
+        <SwitchCell item={row.original} field="isTop" itemStates={itemStates} onToggle={handleToggle} />
+      ),
+    },
+    {
+      accessorKey: 'isEnabled',
+      header: '啟用',
+      cell: ({ row }) => (
+        <SwitchCell item={row.original} field="isEnabled" itemStates={itemStates} onToggle={handleToggle} />
+      ),
     },
     {
       accessorKey: 'publicAt',
@@ -90,13 +121,21 @@ export const getColumns = ({
       header: '操作',
       enableHiding: false,
       cell: ({ row }) => {
-        const payment = row?.original;
+        const news = row?.original;
         return (
           <div>
-            <Button className="mr-3" variant="outline" onClick={() => openDialogEditData(payment)}>
+            <Button
+              className="mr-3 text-secondary"
+              variant="outline"
+              onClick={() => openDialogEditData && openDialogEditData(news)}
+            >
               <Pencil1Icon />
             </Button>
-            <Button variant="outline" onClick={() => openDialogDeleteData(payment._id!, payment.title!)}>
+            <Button
+              variant="outline"
+              className="text-red-500"
+              onClick={() => openDialogDeleteData(news._id!, news.title!)}
+            >
               <TrashIcon />
             </Button>
           </div>
@@ -104,8 +143,4 @@ export const getColumns = ({
       },
     },
   ];
-
-  return Columns;
 };
-
-export default getColumns;
