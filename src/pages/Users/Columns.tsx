@@ -3,40 +3,88 @@ import { Button } from '@/components/ui/button';
 import { UseMutateFunction } from '@tanstack/react-query';
 import { Pencil1Icon, TrashIcon } from '@radix-ui/react-icons';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { AxiosError, AxiosResponse } from 'axios';
 import { AccountBlackListResponseType, AccountResponseType } from '@/api/services/userService/types';
+import debounce from 'lodash/debounce';
+import { useCallback, useEffect, useRef } from 'react';
+import { SwitchCell } from './SwitchCellComponent';
+
+// 定義防抖函數的類型
+type DebouncedFunction = ReturnType<typeof debounce> & {
+  cancel: () => void;
+};
+
+// 定義更新函數的類型
+type UpdateFunction = (item: AccountResponseType, field: 'isBlackListed', value: boolean) => void;
 
 type getColumnsProps = {
-  openDialogEditData: (data: AccountResponseType) => void;
   openDialogDeleteData: (id: string, email: string) => void;
-  UpdateSwitch: UseMutateFunction<
+  openDialogEditData?: (data: AccountResponseType) => void;
+  UpdateSwitch?: UseMutateFunction<
     AxiosResponse<AccountBlackListResponseType>,
     AxiosError,
     AccountBlackListResponseType
   >;
   filter?: number | undefined;
 };
-export const getColumns = ({
-  openDialogEditData,
+export const useColumns = ({
   openDialogDeleteData,
+  openDialogEditData,
   UpdateSwitch,
   filter,
 }: getColumnsProps): ColumnDef<AccountResponseType>[] => {
-  const handleToggle = async (checked: boolean, item: AccountResponseType) => {
-    if (!item._id) {
-      console.error('Missing _id in item object');
-      return;
-    }
-    try {
-      await UpdateSwitch({
-        _id: item._id,
-        isBlackListed: checked,
+  const itemStates = useRef<Record<string, { isBlackListed: boolean }>>({});
+
+  // 使用正確的類型定義
+  const debouncedFnsRef = useRef<Record<string, DebouncedFunction>>({});
+
+  // 在組件卸載時清理防抖函數
+  useEffect(() => {
+    // 在 effect 內部創建一個引用的副本
+    const currentDebouncedFns = { ...debouncedFnsRef.current };
+
+    return () => {
+      // 使用副本進行清理
+      Object.values(currentDebouncedFns).forEach((fn) => {
+        fn.cancel();
       });
-    } catch (error) {
-      console.error('Toggle failed:', error);
-    }
-  };
+    };
+  }, []);
+
+  const handleToggle = useCallback(
+    (field: 'isBlackListed', checked: boolean, item: AccountResponseType) => {
+      if (!item._id) {
+        console.error('Missing _id in news object');
+        return;
+      }
+
+      // 更新本地狀態
+      itemStates.current[item._id] = {
+        ...itemStates.current[item._id],
+        [field]: checked,
+      };
+
+      // 為每個項目的每個字段創建唯一的 key
+      const key = `${item._id}-${field}`;
+
+      // 如果這個 key 的防抖函數不存在，就創建一個
+      if (!debouncedFnsRef.current[key]) {
+        const updateFn: UpdateFunction = (itemToUpdate, fieldToUpdate, valueToUpdate) => {
+          if (UpdateSwitch) {
+            UpdateSwitch({
+              _id: itemToUpdate._id,
+              [fieldToUpdate]: valueToUpdate,
+            });
+          }
+        };
+        debouncedFnsRef.current[key] = debounce(updateFn, 1000);
+      }
+
+      // 使用存儲的防抖函數
+      debouncedFnsRef.current[key](item, field, checked);
+    },
+    [UpdateSwitch],
+  );
 
   const Columns: ColumnDef<AccountResponseType>[] = [
     {
@@ -63,8 +111,11 @@ export const getColumns = ({
       accessorKey: 'dateOfBirth',
       header: '生日',
       cell: ({ row }) => {
-        const date = new Date(row.getValue('dateOfBirth'));
-        return <div className="lowercase">{date.toLocaleDateString()}</div>;
+        const dateValue = row.getValue('dateOfBirth');
+        const date = new Date(dateValue as Date);
+        const isValidDate = !isNaN(date.getTime());
+
+        return <div className="lowercase">{isValidDate ? date.toLocaleDateString() : ''}</div>;
       },
     },
     {
@@ -92,22 +143,22 @@ export const getColumns = ({
         const payment = row?.original;
         return (
           <div className="flex items-center">
-            <Button className="mr-3" variant="outline" onClick={() => openDialogEditData(payment)}>
+            <Button
+              className="mr-3 text-secondary"
+              variant="outline"
+              onClick={() => openDialogEditData && openDialogEditData(payment)}
+            >
               <Pencil1Icon />
             </Button>
             <Button
               variant="outline"
-              className="mr-3"
+              className="mr-3 text-red-500"
               onClick={() => openDialogDeleteData(payment._id!, payment.email!)}
             >
               <TrashIcon />
             </Button>
             {filter !== 1 && filter !== 0 ? null : (
-              <Switch
-                id={`switch-enabled-${row.id}`}
-                checked={payment.isBlackListed as boolean}
-                onCheckedChange={(checked) => handleToggle(checked, payment)}
-              />
+              <SwitchCell item={row.original} field="isBlackListed" itemStates={itemStates} onToggle={handleToggle} />
             )}
           </div>
         );
@@ -117,5 +168,3 @@ export const getColumns = ({
 
   return Columns;
 };
-
-export default getColumns;
