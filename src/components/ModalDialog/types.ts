@@ -16,5 +16,5 @@ export interface ModalDialogProps<T extends FieldValues> {
   FormFields: FormFieldConfig<T>[];
   initialValues: T;
   createData: UseMutateFunction<AxiosResponse<T>, AxiosError<AxiosError>, T>;
-  updateData: UseMutateFunction<AxiosResponse<T>, AxiosError<AxiosError>, T>;
+  updateData?: UseMutateFunction<AxiosResponse<T>, AxiosError<AxiosError>, T>;
 }
