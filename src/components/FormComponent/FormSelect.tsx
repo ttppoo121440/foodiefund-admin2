@@ -3,7 +3,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/
 import { FormFieldConfig } from './types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
-const FormSelect = <T extends FieldValues>({ label, name, options }: FormFieldConfig<T>) => {
+const FormSelect = <T extends FieldValues>({ label, name, options, placeholder }: FormFieldConfig<T>) => {
   const { control } = useFormContext<T>();
   return (
     <div className="my-5">
@@ -16,7 +16,7 @@ const FormSelect = <T extends FieldValues>({ label, name, options }: FormFieldCo
             <Select onValueChange={field.onChange} value={field.value || ''}>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a verified email to display" />
+                  <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
