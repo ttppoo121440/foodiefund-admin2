@@ -5,18 +5,18 @@ import { UseMutateFunction } from '@tanstack/react-query';
 import { AxiosError, AxiosResponse } from 'axios';
 
 type GetColumnsParams<T, V> = {
-  openDialogEditData: (data: T) => void;
   openDialogDeleteData: (id: string, email: string) => void;
-  UpdateSwitch: UseMutateFunction<AxiosResponse<V>, AxiosError, V>;
+  openDialogEditData?: (data: T) => void;
+  UpdateSwitch?: UseMutateFunction<AxiosResponse<V>, AxiosError, V>;
   filter?: number | undefined;
 };
 
 const useTableConfig = <TData, T>(
   data: TData[],
   getColumns: (params: GetColumnsParams<TData, T>) => ColumnDef<TData>[],
-  openDialogEditData: (data: TData) => void,
   openDialogDeleteData: (id: string, email: string) => void,
-  UpdateSwitch: UseMutateFunction<AxiosResponse<T>, AxiosError, T>,
+  openDialogEditData?: (data: TData) => void,
+  UpdateSwitch?: UseMutateFunction<AxiosResponse<T>, AxiosError, T>,
   filter?: number | undefined,
 ) => {
   const [sorting, setSorting] = useState<SortingState>([]);
